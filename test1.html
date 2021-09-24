@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>ROI预测工具</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!-- 加载日历的组件-->
+    <link rel="stylesheet" href="bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css">
+    <script src="bootstrap-datepicker/dist/js/bootstrap-datepicker.js"></script>
+    <script src="bootstrap-datepicker/dist/locales/bootstrap-datepicker.zh-CN.min.js"></script>
+    <!-- 加载复选框的组件-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/css/bootstrap-select.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/js/bootstrap-select.min.js"></script>
+    <script src="bootstrap-select-1.14/js/i18n/defaults-zh_CN.min.js"></script>
+    
+  </head>  
+  <body>
+  <div class="jumbotron text-left" style="margin-bottom:1">
+    <h1>ROI预测工具</h1>
+  </div>
+
+  <div class="container">
+    <h5>过滤</h5>
+    <div class="row clearfix">
+      <div class="col-sm-4 column">
+        <div class="input-group input-daterange">
+          <input id="WHC_PayDate" name="start" type="text" placeholder="日期(起)" data-date-format="yyyy-mm-dd" class="form-control"/>
+          <div class="input-group-addon">~</div>
+          <input id="WHC_PayDate2" name="end" type="text" placeholder="日期(止)" data-date-format="yyyy-mm-dd" class="form-control"/>
+        </div>
+      </div>
+      <div class="col-sm-2 column">
+        <select class="selectpicker form-control" id="Product" title="产品" multiple="multiple" data-max-options="1">
+          <option>广东省</option>
+          <option>广西省</option>
+          <option>福建省</option>
+          <option>湖南省</option>
+          <option>山东省</option>                            
+        </select>
+      </div>
+      <div class="col-sm-3 column">
+        <select class="selectpicker form-control" id="Channel" title="渠道" multiple="multiple" data-selected-text-format="count > 3">
+          <option>广东省</option>
+          <option>广西省</option>
+          <option>福建省</option>
+          <option>湖南省</option>
+          <option>山东省</option>
+        </select>
+      </div>
+    </div>
+    <script type="text/javascript">
+      // const obj = {
+      //   sD: '',
+      //   eD: '',
+        
+      // }
+      $('.selectpicker').selectpicker({
+        style: 'btn-default'
+      });
+    </script>
+    <script type="text/javascript">
+      /*
+       *日历函数，进行日期的选择 
+       */
+      $('#WHC_PayDate').datepicker({
+        language: 'zh-CN', //语言
+        // todayBtn : "linked",//显示今天按钮
+        autoclose : true,//选择后自动关闭
+        todayHighlight : true,//今天日期高亮
+        clearBtn: true//清除按钮
+        // endDate : new Date() //设置结束时间
+      }).on('changeDate',function(e){
+          var startTime = e.date;
+          $('#WHC_PayDate2').datepicker('setStartDate',startTime);
+      });
+      //日期选择器 选择结束日期
+      $('#WHC_PayDate2').datepicker({
+          language: 'zh-CN', //语言
+          // todayBtn : "linked",//显示今天按钮
+          autoclose : true,//选择后自动关闭
+          clearBtn: true,//清除按钮
+          todayHighlight : true//今天日期高亮
+          // endDate : new Date() //设置结束时间
+      }).on('changeDate',function(e){
+          var endTime = e.date;
+          $('#WHC_PayDate').datepicker('setEndDate',endTime);
+      });
+    </script>
+    <div class="row clearfix">
+      <h5></h5>
+      <div class="col-sm-4 column">
+        <div class="input-group input-daterange">
+          <input id="Costlow" name="low" type="text" placeholder="花费(低)" class="form-control" input type="text" onkeyup="value=value.replace(/[^\d.]/g,'')"/>
+          <div class="input-group-addon">~</div>
+          <input id="Costhigh" name="high" type="text" placeholder="花费(高)" class="form-control" input type="text" onkeyup="value=value.replace(/[^\d.]/g,'')"/>
+        </div>
+      </div>
+      <div class="col-sm-2 column">
+        <select class="selectpicker form-control" id="NDaysPre" title="预测发生天数" multiple="multiple" data-max-options="1">
+          <option>7 日预测</option>
+          <option>14日预测</option>
+          <option>30日预测</option>                           
+        </select>
+      </div>
+      <div class="col-sm-3 column">
+        <input id="CampaignText" name="CampaignText" type="text" placeholder="Campaign" class="form-control" input type="text"/>
+      </div>
+      <div class="col-sm-3 column">
+        <div id="find" class="bs-example">
+          <button type="button" class="btn btn-default btn-block">查询</button>
+        </div>
+      </div>
+    </div>
+    <div class="row clearfix">
+      <div class="col-sm-9 column">
+        <h5>显示信息</h5>
+        <table class="table table-striped table-bordered" id="MyTable">
+          <!--<thead>
+            <tr>
+              <th>名称</th>
+              <th>城市</th>
+              <th>邮编</th>
+            </tr>
+          </thead>-->
+        </table>
+      </div>
+      <div class="col-sm-3 column">
+        <h5>维度</h5>
+        <div id="myButtons1" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">日期</button>
+        </div>
+        <div id="myButtons2" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">渠道</button>
+        </div>
+        <div id="myButtons3" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">Campaign</button>
+        </div>
+        <h5>指标</h5>
+        <div id="myButtons4" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">日期</button>
+        </div>
+        <div id="myButtons5" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">渠道</button>
+        </div>
+        <div id="myButtons6" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">Campaign</button>
+        </div>
+        <div id="myButtons7" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">花费</button>
+        </div>
+        <div id="myButtons8" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">购买用户数</button>
+        </div>
+        <div id="myButtons9" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">单价</button>
+        </div>
+        <div id="myButtons10" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">购买Ecpm</button>
+        </div>
+        <div id="myButtons11" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">总收入</button>
+        </div>
+        <div id="myButtons12" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">ROI</button>
+        </div>
+        <div id="myButtons13" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">+n日预测ROI</button>
+        </div>
+        <div id="myButtons14" class="bs-example">
+          <button type="button" value="on_click" class="btn btn-default btn-lg btn-block">+n日实际ROI</button>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+      /*
+       *添加元素到表格中 
+       */
+      function AddNewColumn(textvalue){
+        // var newRow="<tr><th>"+"时间"+"</th></tr>";
+        // $("#MyTable").append(newRow);
+        var tab = document.getElementById("MyTable");
+        var rowlength = tab.rows.length;
+        //var columlength = tab.rows[1].cells.length;
+        if(rowlength==0){
+          NewRow = tab.insertRow();
+          NewCell = NewRow.insertCell();
+        }else{
+          NewCell = tab.rows[0].insertCell();
+        }
+        NewCell.innerHTML = "<B>"+textvalue+"</B>";
+        // for(var i=0 ; i<rowlength ; ++i){
+        //   if(i==0){
+        //     var oTd = tab.rows[0].insertCell(columlength);
+        //     oTd.innerHTML = "<tr><th>时间</th></tr>";
+        //   }else if(i == 1){
+        //     var oTd = tab.rows[1].insertCell(columnlength);
+        //     oTd.innerHTML = "<div style='background: #D3E6FE;width=100%;'>" + (++count) + "</div>";
+        //   }else if (i > 1) {
+        //     var oTd = tab.rows[i].insertCell(columnlength);
+        //     oTd.id = "column" + columnID;
+        //     oTd.innerHTML = "<textarea id=''  rows='4' style='width:150; height:40px;'></textarea>";
+        //   }
+        // }
+      }
+      /*
+       *删除表格中的元素 
+       */
+      function DeteleColumn(textvalue){
+        textvalue=textvalue.replace(/[\r\n]/g,"");
+        var tab = document.getElementById("MyTable");
+        var columlength = tab.rows[0].cells.length;
+        for(var i=0;i<columlength;++i){
+          //console.log(encodeURIComponent(tab.rows[0].cells[i].innerText));
+          //console.log(encodeURIComponent(textvalue));
+          if(tab.rows[0].cells[i].innerText==textvalue){
+            //console.log("1");
+            tab.rows[0].deleteCell(i);
+          }
+        }
+      }
+      /*
+       *查找前检查所有的元素是否被赋值 
+       */
+      function CheckUsefulOrNot(){
+        var CostlowText_ = document.getElementById("Costlow").value;
+        var CosthighText_ = document.getElementById("Costhigh").value;
+        //console.log(CostlowText_);
+        var CampaignText_ =document.getElementById("CampaignText").value;
+        var WHC_PayDateStartText_ =document.getElementById("WHC_PayDate").value;
+        var WHC_PayDateEndText_ =document.getElementById("WHC_PayDate2").value;
+        var NDaysPreText_ =document.getElementById("NDaysPre").value; 
+        var ProductText_ =document.getElementById("Product").value;
+        var ChannelText_ =document.getElementById("Channel").value;
+        if (CosthighText_.length==0 || CostlowText_.length==0) {
+          alert("未输入花费");
+          return false;
+        }
+        if (CampaignText_.length==0){
+          alert("未输入Campaign");
+          return false;
+        }
+        if (WHC_PayDateStartText_.length==0 || WHC_PayDateEndText_.length==0){
+          alert("未选择查询日期");
+          return false;
+        }
+        if (NDaysPreText_.length==0){
+          alert("未选择预测发生天数");
+          return false;
+        }
+        if (ProductText_.length==0){
+          alert("未选择产品");
+          return false;
+        }
+        if (ChannelText_.length==0){
+          alert("未选择渠道");
+          return false;
+        }
+        
+        return true;
+      }
+      /**
+       * 拼接对象为请求字符串
+       * @param {Object} obj - 待拼接的对象
+       * @returns {string} - 拼接成的请求字符串
+       */
+      function encodeSearchParams(obj) {
+        const params = []
+
+        Object.keys(obj).forEach((key) => {
+          let value = obj[key]
+          // 如果值为undefined我们将其置空
+          if (typeof value === 'undefined') {
+            value = ''
+          }
+          // 对于需要编码的文本（比如说中文）我们要进行编码
+          params.push([key, encodeURIComponent(value)].join('='))
+        })
+
+        return params.join('&')
+      }
+      /*
+       *url拼接 
+       */
+       function PutTogether(){
+
+       }
+      /*
+       *所有的按键函数 
+       */
+      $(function () {
+        $("#myButtons1 .btn").click(function(){
+          $(this).button('toggle');
+        });
+      });
+      $(function () {
+        $("#myButtons2 .btn").click(function(){
+          $(this).button('toggle');
+        });
+      });
+      $(function () {
+        $("#myButtons3 .btn").click(function(){
+          $(this).button('toggle');
+        });
+      });
+      $(function () {
+        $("#myButtons4 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons4").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons5 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons5").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons6 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons6").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons7 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons7").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons8 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons8").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons9 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons9").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons10 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons10").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons11 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons11").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons12 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons12").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons13 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons13").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      $(function () {
+        $("#myButtons14 .btn").click(function(){
+          $(this).button('toggle');
+          var buttonText = document.getElementById("myButtons14").innerText;
+          if(this.value=="on_click"){
+            this.value="out_click";
+            AddNewColumn(buttonText);
+          }else{
+            this.value="on_click";
+            DeteleColumn(buttonText);
+          }
+        });
+      });
+      /*
+       *查找按键
+       */
+      $(function () {
+        $("#find .btn").click(function(){
+          if(!CheckUsefulOrNot())
+            return;
+          $(this).button('toggle');
+        });
+      });
+    </script>
+  </div>
+</html>
